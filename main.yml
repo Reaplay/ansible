@@ -1,0 +1,34 @@
+---
+- name: test playbook
+  hosts: centos
+  vars_files:
+    - vars/defaults.yml
+  tasks:
+    - name: Add rule firewall
+      ansible.builtin.shell: firewall-cmd --permanent --zone=public --add-port=8123/tcp
+    - name: Reload firewall-cmd
+      ansible.builtin.shell: firewall-cmd --reload
+    - name: Add repositories Docker
+      get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docer-ce.repo
+    - name: Install pip docker-compos
+      ansible.builtin.pip:
+        name: docker-compose
+    - name: Install Docker Engine
+      yum:
+        name: ['docker-ce', 'docker-ce-cli']
+        state: present
+    - name: Start Docker
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: false
+    - name: Create HA
+      docker_container:
+        name: HomeAssistant
+        image: ghcr.io/home-assistant/home-assistant:stable
+        volumes:
+          - /home/ansible/homeassistant:/config
+          - /etc/localtime:/etc/localtime:ro
+        network_mode: host
